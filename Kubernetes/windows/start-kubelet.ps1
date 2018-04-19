@@ -1,7 +1,6 @@
 Param(
     $clusterCIDR="192.168.0.0/16",
-    $NetworkMode = "L2Bridge",
-    $NetworkName = "l2bridge"
+    $NetworkMode = "L2Bridge"
 )
 
 # Todo : Get these values using kubectl
@@ -15,8 +14,6 @@ $CNIConfig = [Io.path]::Combine($CNIPath, "config", "$NetworkMode.conf")
 
 $endpointName = "cbr0"
 $vnicName = "vEthernet ($endpointName)"
-
-ipmo $WorkingDir\helper.psm1
 
 function
 Get-PodGateway($podCIDR)
@@ -195,12 +192,22 @@ if (-not $podCidrDiscovered)
 }
 
 # startup the service
-$podGW = Get-PodGateway $podCIDR
 ipmo C:\k\hns.psm1
+$hnsNetwork = Get-HnsNetwork | ? Name -EQ $NetworkMode.ToLower()
 
-# At this point, no SDN network should exists 
+if ($hnsNetwork)
+{
+    # Cleanup all containers
+    docker ps -q | foreach {docker rm $_ -f} 
 
-$hnsNetwork = New-HNSNetwork -Type $NetworkMode -AddressPrefix $podCIDR -Gateway $podGW -Name $NetworkName.ToLower() -Verbose
+    Write-Host "Cleaning up old HNS network found" 
+    Remove-HnsNetwork $hnsNetwork
+    Start-Sleep 10 
+}
+
+$podGW = Get-PodGateway $podCIDR
+
+$hnsNetwork = New-HNSNetwork -Type $NetworkMode -AddressPrefix $podCIDR -Gateway $podGW -Name $NetworkMode.ToLower() -Verbose
 $podEndpointGW = Get-PodEndpointGateway $podCIDR
 
 $hnsEndpoint = New-HnsEndpoint -NetworkId $hnsNetwork.Id -Name $endpointName -IPAddress $podEndpointGW -Gateway "0.0.0.0" -Verbose

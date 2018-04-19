@@ -1,3 +1,5 @@
-FROM microsoft/nanoserver
+FROM microsoft/windowsservercore
 
-CMD cmd /c ping -t localhost
+ADD pause.ps1 /pause/pause.ps1
+
+CMD powershell /pause/pause.ps1

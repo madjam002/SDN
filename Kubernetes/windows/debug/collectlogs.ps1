@@ -1,10 +1,6 @@
-Param(
-    [parameter(Mandatory = $false)] [string] $Network = "L2Bridge"
-)
-
 $BaseDir = "c:\k"
 ipmo $BaseDir\hns.psm1
-
+$Network = "L2Bridge"
 
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 
@@ -19,7 +15,7 @@ Get-hnspolicylist | Convertto-json -Depth 20 > policy.txt
 vfpctrl.exe /list-vmswitch-port > ports.txt
 powershell $ScriptPath\dumpVfpPolicies.ps1 -switchName $Network > vfpOutput.txt
 
-ipconfig /allcompartments /all > ip.txt
+ipconfig /all > ip.txt
 route print > routes.txt
 popd
 Write-Host "Logs are available at $outDir"
